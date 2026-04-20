@@ -58,7 +58,10 @@
   :bind
   ("C-c n" . denote-open-or-create)
   :config
-  (setq denote-directory '("~/Library/CloudStorage/GoogleDrive-sergiolib@gmail.com/My Drive/Notes/")))
+  (if (eq system-type 'darwin)
+      
+      (setq denote-directory '("~/Library/CloudStorage/GoogleDrive-sergiolib@gmail.com/My Drive/Notes/"))
+    (setq denote-directory '("~/Documents/Notes/"))))
 
 ;; Configure and install magit
 (use-package transient
@@ -359,12 +362,12 @@
   :ensure t
   :hook (prog-mode . copilot-mode)
   :bind (:map copilot-completion-map
-              ("<tab>" . copilot-accept-completion)
-              ("TAB" . copilot-accept-completion)
-              ("C-<tab>" . copilot-accept-completion-by-word)
-              ("C-TAB" . copilot-accept-completion-by-word)
-              ("C-n" . copilot-next-completion)
-              ("C-p" . copilot-previous-completion)))
+	      ("<tab>" . copilot-accept-completion)
+	      ("TAB" . copilot-accept-completion)
+	      ("C-<tab>" . copilot-accept-completion-by-word)
+	      ("C-TAB" . copilot-accept-completion-by-word)
+	      ("C-n" . copilot-next-completion)
+	      ("C-p" . copilot-previous-completion)))
 
 (use-package multiple-cursors
   :ensure t
@@ -432,20 +435,34 @@
   :config
   (general-evil-setup t)
   (general-create-definer sergio/leader-keys
-			  :keymaps '(normal insert visual emacs)
-			  :prefix "SPC"
-			  :global-prefix "C-SPC")
+    :keymaps '(normal insert visual emacs)
+    :prefix "SPC"
+    :global-prefix "C-SPC")
   (sergio/leader-keys
-   "c" '(claude-code-transient :which-key "claude")
-   "t" '(:ignore t :which-key "toggles")
-   "tt" '(load-theme :which-key "choose theme")
-   "b" '(:ignore t :which-key "buffer")
-   "bb" '(consult-buffer :which-key "switch buffer")
-   "bd" '(kill-this-buffer :which-key "kill buffer")
-   "f" '(:ignore t :which-key "file")
-   "ff" '(find-file :which-key "find file")
-   "fr" '(recentf-open-files :which-key "recent files")
-   "p" '(:ignore t :which-key "project")
-   "pp" '(project-switch-project :which-key "switch project")
-   "pf" '(project-find-file :which-key "find file in project")
-   "ps" '(sergio/consult-ripgrep :which-key "search in project")))
+    "c" '(claude-code-transient :which-key "claude")
+    "t" '(:ignore t :which-key "toggles")
+    "tt" '(load-theme :which-key "choose theme")
+    "b" '(:ignore t :which-key "buffer")
+    "bb" '(consult-buffer :which-key "switch buffer")
+    "bd" '(kill-this-buffer :which-key "kill buffer")
+    "f" '(:ignore t :which-key "file")
+    "ff" '(find-file :which-key "find file")
+    "fr" '(recentf-open-files :which-key "recent files")
+    "p" '(:ignore t :which-key "project")
+    "pp" '(project-switch-project :which-key "switch project")
+    "pf" '(project-find-file :which-key "find file in project")
+    "ps" '(sergio/consult-ripgrep :which-key "search in project")))
+
+(use-package auto-dark
+  :ensure t
+  :config
+  (setq auto-dark-themes '((ef-night) (ef-frost)))
+  (add-hook 'after-make-frame-functions #'my/server-auto-dark)
+  (auto-dark-mode 1))
+
+(defun my/server-auto-dark (frame)
+  (with-selected-frame frame
+    (when (display-graphic-p)
+      (auto-dark-mode 1)
+      ;; Remove hook so it only runs once
+      (remove-hook 'after-make-frame-functions #'my/server-auto-dark))))
