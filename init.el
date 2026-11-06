@@ -59,7 +59,6 @@
   ("C-c n" . denote-open-or-create)
   :config
   (if (eq system-type 'darwin)
-      
       (setq denote-directory '("~/Library/CloudStorage/GoogleDrive-sergiolib@gmail.com/My Drive/Notes/"))
     (setq denote-directory '("~/Documents/Notes/"))))
 
@@ -183,7 +182,7 @@
     (pcase completion-in-region--data
       (`(,beg ,end ,table ,pred ,extras)
        (let ((completion-extra-properties extras)
-             completion-cycle-threshold completion-cycling)
+	     completion-cycle-threshold completion-cycling)
 	 (consult-completion-in-region beg end table pred)))))
   (keymap-set corfu-map "M-m" #'corfu-move-to-minibuffer)
   (add-to-list 'corfu-continue-commands #'corfu-move-to-minibuffer))
@@ -358,17 +357,6 @@
 (use-package track-changes
   :ensure t)
 
-(use-package copilot
-  :ensure t
-  :hook (prog-mode . copilot-mode)
-  :bind (:map copilot-completion-map
-	      ("<tab>" . copilot-accept-completion)
-	      ("TAB" . copilot-accept-completion)
-	      ("C-<tab>" . copilot-accept-completion-by-word)
-	      ("C-TAB" . copilot-accept-completion-by-word)
-	      ("C-n" . copilot-next-completion)
-	      ("C-p" . copilot-previous-completion)))
-
 (use-package multiple-cursors
   :ensure t
   :bind (("M-¿" . mc/mark-next-like-this)
@@ -466,3 +454,8 @@
       (auto-dark-mode 1)
       ;; Remove hook so it only runs once
       (remove-hook 'after-make-frame-functions #'my/server-auto-dark))))
+
+(use-package typescript-ts-mode
+  :mode "\\.tsx\\'"
+  :config
+  (add-hook 'typescript-ts-base-mode-hook 'eglot-ensure))
