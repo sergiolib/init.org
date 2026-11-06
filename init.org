@@ -1,4 +1,97 @@
 # -*- eval: (org-sbe "auto-tangle"); -*-
+* Lexical binding
+I don't know want this does. I ony know it silences warnings.
+#+begin_src emacs-lisp :tangle init.el
+  ;; -*- lexical-binding: t; -*-
+#+end_src
+
+#+begin_src emacs-lisp :tangle early-init.el
+  ;; -*- lexical-binding: t; -*-
+#+end_src
+
+#+begin_src emacs-lisp :tangle elpaca.el
+  ;; -*- lexical-binding: t; -*-
+#+end_src
+
+** Silence the warnings in thrid party packages
+#+begin_src emacs-lisp :tangle init.el
+  (define-advice display-warning (:around (orig-fun type &rest args) silence-missing-lexical-binding)
+    "Silence warnings about missing lexical-binding cookies."
+    (if (memq 'missing-lexbind-cookie type)
+	t
+      (apply orig-fun type args)))
+#+end_src
+
+* Key binding to access this file
+#+begin_src emacs-lisp :tangle init.el
+  (defun sergio/find-init-file ()
+    "Opens a buffer with the init.el contents"
+    (interactive)
+    (find-file "~/.emacs.d/init.el"))
+
+  (defun sergio/find-init-literate-file ()
+    "Opens a buffer with the init.org contents"
+    (interactive)
+    (find-file "~/.emacs.d/init.org"))
+
+  (use-package emacs
+    :init
+    (global-set-key (kbd "C-c e") 'sergio/find-init-literate-file))
+#+end_src
+
+* Elpaca
+#+begin_src emacs-lisp :tangle early-init.el
+  ;; Disable package.el
+  (setq package-enable-at-startup nil)
+#+end_src
+
+#+begin_src emacs-lisp :tangle elpaca.el
+  (defvar elpaca-installer-version 0.12)
+  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+  (defvar elpaca-sources-directory (expand-file-name "sources/" elpaca-directory))
+  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                                :ref nil :depth 1 :inherit ignore
+                                :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                                :build (:not elpaca-activate)))
+  (let* ((repo  (expand-file-name "elpaca/" elpaca-sources-directory))
+         (build (expand-file-name "elpaca/" elpaca-builds-directory))
+         (order (cdr elpaca-order))
+         (default-directory repo))
+    (add-to-list 'load-path (if (file-exists-p build) build repo))
+    (unless (file-exists-p repo)
+      (make-directory repo t)
+      (when (<= emacs-major-version 28) (require 'subr-x))
+      (condition-case-unless-debug err
+          (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                    ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                    ,@(when-let* ((depth (plist-get order :depth)))
+                                                        (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                    ,(plist-get order :repo) ,repo))))
+                    ((zerop (call-process "git" nil buffer t "checkout"
+                                          (or (plist-get order :ref) "--"))))
+                    (emacs (concat invocation-directory invocation-name))
+                    ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                          "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                    ((require 'elpaca))
+                    ((elpaca-generate-autoloads "elpaca" repo)))
+              (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+            (error "%s" (with-current-buffer buffer (buffer-string))))
+        ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+    (unless (require 'elpaca-autoloads nil t)
+      (require 'elpaca)
+      (elpaca-generate-autoloads "elpaca" repo)
+      (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
+  (add-hook 'after-init-hook #'elpaca-process-queues)
+  (elpaca `(,@elpaca-order))
+
+  ;; Use package support
+  ;; Install use-package support
+  (elpaca elpaca-use-package
+    ;; Enable use-package :ensure support for Elpaca.
+    (elpaca-use-package-mode))
+#+end_src
+
 * Rest of configuration
 #+begin_src emacs-lisp :tangle init.el
   ;; Right option key on the Mac is a keyboard modifier
@@ -245,12 +338,6 @@
     :mode
     ("\\.py\\'" . python-ts-mode))
 
-  ;; Handy global keymaps for emacs
-  (use-package emacs
-    :init
-    ;; C-c e opens init file
-    (global-set-key (kbd "C-c e") (lambda () (interactive) (find-file "~/.emacs.d/init.el"))))
-
   ;; Org mode
   (use-package org
     :bind
@@ -480,9 +567,18 @@
 
 #+end_src
 
+* Annex: Setup auto tangle on init.org
+Only in init.org inside an .emacs.d directory (not necessarily THE
+.emacs.d), set up automatic tangling to init.el after saving the file.
+
 #+name: auto-tangle
 #+begin_src emacs-lisp
   (defun sergio/tangle-on-save ()
-    (add-hook 'after-save-hook 'org-babel-tangle 0 t))
+    (when (buffer-file-name)
+      (let ((filename (buffer-file-name)))
+        (when (string-match-p "\.emacs\.d/init\.org" filename)
+  	(add-hook 'after-save-hook 'org-babel-tangle 0 t)))))
+
   (add-hook 'org-mode-hook 'sergio/tangle-on-save)
 #+end_src
+
