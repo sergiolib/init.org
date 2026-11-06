@@ -28,3 +28,6 @@ network-security.data
 tree-sitter/
 url/
 /secrets.el
+
+# .el files
+*.el
