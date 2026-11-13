@@ -271,7 +271,7 @@ Add :tangle init.el to the src block to enable debug on init.
   (use-package ef-themes
     :ensure t
     :config
-    (load-theme 'ef-frost t))
+    (load-theme 'ef-bio t))
 
   ;; Configure eglot
   (use-package eglot
