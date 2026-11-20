@@ -628,7 +628,7 @@ Add :tangle init.el to the src block to enable debug on init.
   (use-package auto-dark
     :ensure t
     :config
-    (setq auto-dark-themes '((ef-night) (ef-frost)))
+    (setq auto-dark-themes '((ef-night) (ef-bio)))
     (add-hook 'after-make-frame-functions #'my/server-auto-dark)
     (auto-dark-mode 1))
 
